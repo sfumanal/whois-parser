@@ -64,9 +64,12 @@ module Whois
         end
       end
 
-      # TODO: Use anniversary
-      property_not_supported :expires_on
-
+      property_supported :expires_on do
+        if content_for_scanner =~ /Expiry Date:\s+(.+)\n/
+          d, m, y = $1.split("/")
+          parse_time("#{y}-#{m}-#{d}")
+        end
+      end
 
       property_supported :registrant_contacts do
         parse_contact("holder-c", Parser::Contact::TYPE_REGISTRANT)
@@ -86,8 +89,8 @@ module Whois
           if line =~ /(.+) \[(.+)\]/
             name = $1
             ips  = $2.split(/\s+/)
-            ipv4 = ips.find { |ip| Whois::Server.valid_ipv4?(ip) }
-            ipv6 = ips.find { |ip| Whois::Server.valid_ipv6?(ip) }
+            ipv4 = ips.find { |ip| Whois::Server.send(:valid_ipv4?, ip) }
+            ipv6 = ips.find { |ip| Whois::Server.send(:valid_ipv6?, ip) }
             Parser::Nameserver.new(:name => name, :ipv4 => ipv4, :ipv6 => ipv6)
           else
             Parser::Nameserver.new(:name => line)
